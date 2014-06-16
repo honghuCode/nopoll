@@ -49,6 +49,8 @@ nopoll_conn_is_tls_on
 nopoll_conn_log_ssl
 nopoll_conn_mask_content
 nopoll_conn_new
+nopoll_conn_new_with_socket
+nopoll_conn_pending_data
 nopoll_conn_pending_write_bytes
 nopoll_conn_port
 nopoll_conn_produce_accept_key
@@ -74,6 +76,7 @@ nopoll_conn_shutdown
 nopoll_conn_sock_connect
 nopoll_conn_socket
 nopoll_conn_tls_new
+nopoll_conn_tls_new_with_socket
 nopoll_conn_tls_receive
 nopoll_conn_tls_send
 nopoll_conn_unref
@@ -95,6 +98,7 @@ nopoll_ctx_unregister_conn
 nopoll_free
 nopoll_get_16bit
 nopoll_get_32bit
+nopoll_get_64bit
 nopoll_get_8bit
 nopoll_get_bit
 nopoll_int2bin

@@ -455,6 +455,7 @@ int nopoll_conn_tls_send (noPollConn * conn, char * buffer, int buffer_size)
  */
 noPollConn * __nopoll_conn_new_common (noPollCtx    * ctx,
 				       nopoll_bool    enable_tls,
+				       int            socket, 
 				       const char   * host_ip, 
 				       const char   * host_port, 
 				       const char   * host_name,
@@ -477,11 +478,16 @@ noPollConn * __nopoll_conn_new_common (noPollCtx    * ctx,
 	if (host_port == NULL)
 		host_port = "80";
 
-	/* create socket connection in a non block manner */
-	session = nopoll_conn_sock_connect (ctx, host_ip, host_port);
-	if (session == -1) {
-		nopoll_log (ctx, NOPOLL_LEVEL_CRITICAL, "Failed to connect to remote host %s:%s", host_ip, host_port);
-		return NULL;
+	/* if the user gave us a socket, use it */
+	if (socket != -1) {
+		session = socket;
+	} else {
+		/* create socket connection in a non block manner */
+		session = nopoll_conn_sock_connect (ctx, host_ip, host_port);
+		if (session == -1) {
+			nopoll_log (ctx, NOPOLL_LEVEL_CRITICAL, "Failed to connect to remote host %s:%s", host_ip, host_port);
+			return NULL;
+		} /* end if */
 	} /* end if */
 
 	/* create the connection */
@@ -694,7 +700,50 @@ noPollConn * nopoll_conn_new (noPollCtx  * ctx,
 {
 	/* call common implementation */
 	return __nopoll_conn_new_common (ctx, nopoll_false, 
-					 host_ip, host_port, host_name, 
+					 -1, host_ip, host_port, host_name, 
+					 get_url, protocols, origin);
+}
+
+/** 
+ * @brief Creates a new Websocket connection using a socket
+ * with a preestablished connection.
+ *
+ * @param ctx The noPoll context to which this new connection will be associated.
+ *
+ * @param socket Socket FD with an already established connection.
+ *
+ * @param host_ip The websocket server address to connect to.
+ *
+ * @param host_port The websocket server port to connect to. If NULL
+ * is provided, port 80 is used.
+ *
+ * @param host_name This is the Host: header value that will be
+ * sent. This header is used by the websocket server to activate the
+ * right virtual host configuration. If null is provided, Host: will
+ * use host_ip value.
+ *
+ * @param get_url As part of the websocket handshake, an url is passed
+ * to the remote server inside a GET method. This parameter allows to
+ * configure this. If NULL is provided, then / will be used.
+ *
+ * @param origin Websocket origin to be notified to the server.
+ *
+ * @param protocols Optional protocols requested to be activated for
+ * this connection (an string of list of strings separated by a white
+ * space).
+ */
+noPollConn * nopoll_conn_new_with_socket (noPollCtx  * ctx,
+			      int          socket, 
+			      const char * host_ip, 
+			      const char * host_port, 
+			      const char * host_name,
+			      const char * get_url, 
+			      const char * protocols,
+			      const char * origin)
+{
+	/* call common implementation */
+	return __nopoll_conn_new_common (ctx, nopoll_false, 
+					 socket, host_ip, host_port, host_name, 
 					 get_url, protocols, origin);
 }
 
@@ -750,7 +799,64 @@ noPollConn * nopoll_conn_tls_new (noPollCtx  * ctx,
 
 	/* call common implementation */
 	return __nopoll_conn_new_common (ctx, nopoll_true, 
-					 host_ip, host_port, host_name, 
+					 -1, host_ip, host_port, host_name, 
+					 get_url, protocols, origin);
+}
+
+/** 
+ * @brief Allows to create a client WebSocket connection over TLS.
+ *
+ * The function works like nopoll_tls_conn_new with the same semantics
+ * but providing a way to create a WebSocket session under the
+ * supervision of TLS.
+ *
+ * @param ctx The context where the operation will take place.
+ *
+ * @param tls_options For now, pass NULL for this parameter. It will
+ * be used in future releases to provide support for TLS
+ * configuration.
+ *
+ * @param socket Socket FD with an already established connection.
+ *
+ * @param host_ip The websocket server address to connect to.
+ *
+ * @param host_port The websocket server port to connect to. If NULL
+ * is provided, port 443 is used.
+ *
+ * @param host_name This is the Host: header value that will be
+ * sent. This header is used by the websocket server to activate the
+ * right virtual host configuration. If null is provided, Host: will
+ * use host_ip value.
+ *
+ * @param get_url As part of the websocket handshake, an url is passed
+ * to the remote server inside a GET method. This parameter allows to
+ * configure this. If NULL is provided, then / will be used.
+ *
+ * @param origin Websocket origin to be notified to the server.
+ *
+ * @param protocols Optional protocols requested to be activated for
+ * this connection (an string of list of strings separated by a white
+ * space).
+ * 
+ */
+noPollConn * nopoll_conn_tls_new_with_socket (noPollCtx  * ctx,
+				  noPollPtr    tls_options,
+				  int          socket, 
+				  const char * host_ip, 
+				  const char * host_port, 
+				  const char * host_name,
+				  const char * get_url, 
+				  const char * protocols,
+				  const char * origin)
+{
+	/* init ssl ciphers and engines */
+	if (! __nopoll_tls_was_init)
+		SSL_library_init ();
+	__nopoll_tls_was_init = nopoll_true;
+
+	/* call common implementation */
+	return __nopoll_conn_new_common (ctx, nopoll_true, 
+					 socket, host_ip, host_port, host_name, 
 					 get_url, protocols, origin);
 }
 
@@ -1778,8 +1884,10 @@ int nopoll_conn_complete_handshake_listener (noPollCtx * ctx, noPollConn * conn,
 		return 0;
 	if (nopoll_conn_check_mime_header_repeated (conn, header, value, "Origin", conn->origin)) 
 		return 0;
+#if 0
 	if (nopoll_conn_check_mime_header_repeated (conn, header, value, "Sec-WebSocket-Protocol", conn->protocols)) 
 		return 0;
+#endif
 	if (nopoll_conn_check_mime_header_repeated (conn, header, value, "Sec-WebSocket-Version", conn->handshake->websocket_version)) 
 		return 0;
 	
@@ -1855,8 +1963,10 @@ int nopoll_conn_complete_handshake_client (noPollCtx * ctx, noPollConn * conn, c
 		return 0;
 	if (nopoll_conn_check_mime_header_repeated (conn, header, value, "Sec-WebSocket-Accept", conn->handshake->websocket_accept)) 
 		return 0;
+#if 0
 	if (nopoll_conn_check_mime_header_repeated (conn, header, value, "Sec-WebSocket-Protocol", conn->protocols)) 
 		return 0;
+#endif
 	
 	/* set the value if required */
 	if (strcasecmp (header, "Sec-Websocket-Accept") == 0)
@@ -2227,27 +2337,21 @@ noPollMsg   * nopoll_conn_get_msg (noPollConn * conn)
 		
 	} else if (msg->payload_size == 127) {
 #if defined(NOPOLL_64BIT_PLATFORM)
-		/* get extended 2 bytes length as unsigned 16 bit
+		/* get extended 8 bytes length as unsigned 64 bit
 		   unsigned integer */
-		msg->payload_size = 0;
-		msg->payload_size |= ((long)(buffer[2]) << 56);
-		msg->payload_size |= ((long)(buffer[3]) << 48);
-
-		/* read more content (next 6 bytes) */
-		if ((bytes = __nopoll_conn_receive (conn, buffer, 6)) != 6) {
-			nopoll_log (conn->ctx, NOPOLL_LEVEL_CRITICAL, 
-				    "Expected to receive next 6 bytes for websocket frame header but found only %d bytes, closing session: %d",
-				    bytes, conn->id);
+		bytes = __nopoll_conn_receive (conn, buffer + 2, 8);
+		if (bytes != 8) {
+			nopoll_log (conn->ctx, NOPOLL_LEVEL_WARNING, "Failed to get next 8 bytes to read header from the wire, failed to received content, shutting down id=%d the connection", conn->id);
+			nopoll_msg_unref (msg);
 			nopoll_conn_shutdown (conn);
-			return NULL;
+			return NULL; 	
 		} /* end if */
 
-		msg->payload_size |= ((long)(buffer[0]) << 40);
-		msg->payload_size |= ((long)(buffer[1]) << 32);
-		msg->payload_size |= ((long)(buffer[2]) << 24);
-		msg->payload_size |= ((long)(buffer[3]) << 16);
-		msg->payload_size |= ((long)(buffer[4]) << 8);
-		msg->payload_size |= buffer[5];
+		/* add to the header bytes read */
+		header_size += bytes;
+			
+		msg->payload_size = nopoll_get_64bit (buffer + 2);
+	   
 #else
 		nopoll_log (conn->ctx, NOPOLL_LEVEL_CRITICAL, "noPoll doesn't support messages bigger than 65k on this plataform (support for 64bit not found)");
 		nopoll_msg_unref (msg);
@@ -3409,6 +3513,23 @@ nopoll_bool      nopoll_conn_wait_until_connection_ready (noPollConn * conn,
 
 	/* report if the connection is ok */
 	return nopoll_conn_is_ok (conn);
+}
+
+/** 
+ * @brief Checks if there's data ready to be read on the connection.
+ *
+ * @param conn The connection to check for pending data
+ *
+ * @return The function returns true if there's data ready to be read
+ * on a connection, or false otherwise.
+ */
+nopoll_bool      nopoll_conn_pending_data (noPollConn * conn)
+{
+	if (conn->pending_msg) {
+		return nopoll_true;
+	} else {
+		return nopoll_false;
+	}
 }
 
 /* @} */

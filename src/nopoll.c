@@ -845,6 +845,27 @@ int    nopoll_get_32bit (const char * buffer)
 	return part1 | part2 | part3 | part4;
 }
 
+/** 
+ * @brief Allows to get a 64bits integer value from the buffer.
+ *
+ * @param buffer The buffer where the integer will be retreived from.
+ *
+ * @return The integer value reported by the buffer.
+ */
+uint64_t    nopoll_get_64bit (const char * buffer)
+{
+	uint64_t part1 = (uint64_t)(buffer[0] & 0x0ff) << 56;
+	uint64_t part2 = (uint64_t)(buffer[1] & 0x0ff) << 48;
+	uint64_t part3 = (uint64_t)(buffer[2] & 0x0ff) << 40;
+	uint64_t part4 = (uint64_t)(buffer[3] & 0x0ff) << 32;
+	uint64_t part5 = (uint64_t)(buffer[4] & 0x0ff) << 24;
+	uint64_t part6 = (uint64_t)(buffer[5] & 0x0ff) << 16;
+	uint64_t part7 = (uint64_t)(buffer[6] & 0x0ff) << 8;
+	uint64_t part8 = (uint64_t)(buffer[7] & 0x0ff);
+
+	return part1 | part2 | part3 | part4 | part5 | part6 | part7 | part8;
+}
+
 extern nopoll_bool __nopoll_tls_was_init;
 
 /** 

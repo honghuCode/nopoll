@@ -49,8 +49,27 @@ noPollConn * nopoll_conn_new (noPollCtx  * ctx,
 			      const char * protocols,
 			      const char * origin);
 
+noPollConn * nopoll_conn_new_with_socket (noPollCtx  * ctx,
+			      int          socket, 
+			      const char * host_ip, 
+			      const char * host_port, 
+			      const char * host_name,
+			      const char * get_url, 
+			      const char * protocols,
+			      const char * origin);
+
 noPollConn * nopoll_conn_tls_new (noPollCtx  * ctx,
 				  noPollPtr    tls_options,
+				  const char * host_ip, 
+				  const char * host_port, 
+				  const char * host_name,
+				  const char * get_url, 
+				  const char * protocols,
+				  const char * origin);
+
+noPollConn * nopoll_conn_tls_new_with_socket (noPollCtx  * ctx,
+				  noPollPtr    tls_options,
+				  int          socket, 
 				  const char * host_ip, 
 				  const char * host_port, 
 				  const char * host_name,
@@ -150,6 +169,8 @@ int           __nopoll_conn_send_common (noPollConn * conn,
 
 nopoll_bool      nopoll_conn_wait_until_connection_ready (noPollConn * conn,
 							  int          timeout);
+
+nopoll_bool      nopoll_conn_pending_data (noPollConn * conn);
 
 /** internal api **/
 void nopoll_conn_complete_handshake (noPollConn * conn);
