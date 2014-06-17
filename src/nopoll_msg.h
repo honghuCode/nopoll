@@ -41,7 +41,7 @@
 
 #include <nopoll.h>
 
-const noPollPtr  nopoll_msg_get_payload (noPollMsg * msg);
+noPollPtr    nopoll_msg_get_payload (noPollMsg * msg);
 
 int          nopoll_msg_get_payload_size (noPollMsg * msg);
 
