@@ -2336,7 +2336,6 @@ noPollMsg   * nopoll_conn_get_msg (noPollConn * conn)
 		msg->payload_size = nopoll_get_16bit (buffer + 2);
 		
 	} else if (msg->payload_size == 127) {
-#if defined(NOPOLL_64BIT_PLATFORM)
 		/* get extended 8 bytes length as unsigned 64 bit
 		   unsigned integer */
 		bytes = __nopoll_conn_receive (conn, buffer + 2, 8);
@@ -2352,12 +2351,6 @@ noPollMsg   * nopoll_conn_get_msg (noPollConn * conn)
 			
 		msg->payload_size = nopoll_get_64bit (buffer + 2);
 	   
-#else
-		nopoll_log (conn->ctx, NOPOLL_LEVEL_CRITICAL, "noPoll doesn't support messages bigger than 65k on this plataform (support for 64bit not found)");
-		nopoll_msg_unref (msg);
-		nopoll_conn_shutdown (conn);
-		return NULL;
-#endif
 	} /* end if */
 
 	if (msg->op_code == NOPOLL_PONG_FRAME) {
