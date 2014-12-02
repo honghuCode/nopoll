@@ -602,6 +602,7 @@ noPollConn * __nopoll_conn_new_common (noPollCtx    * ctx,
 				return NULL;
 			} /* end switch */
 
+#if 0
 			/* try and limit max reconnect allowed */
 			iterator++;
 
@@ -610,6 +611,7 @@ noPollConn * __nopoll_conn_new_common (noPollCtx    * ctx,
 					    iterator, conn->id, errno);
 				return NULL;
 			} /* end if */
+#endif
 
 			/* wait a bit before retry */
 			nopoll_sleep (10000);
