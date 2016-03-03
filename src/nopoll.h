@@ -39,6 +39,7 @@
 #ifndef __NOPOLL_H__
 #define __NOPOLL_H__
 
+#include <stdint.h>
 #include <nopoll_decl.h>
 #include <nopoll_handlers.h>
 
