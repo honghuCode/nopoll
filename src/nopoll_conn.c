@@ -560,7 +560,10 @@ noPollConn * __nopoll_conn_new_common (noPollCtx    * ctx,
 	/* check for TLS support */
 	if (enable_tls) {
 		/* found TLS connection request, enable it */
-		conn->ssl_ctx  = SSL_CTX_new (TLSv1_client_method ()); 
+		conn->ssl_ctx  = SSL_CTX_new (SSLv23_client_method ());
+		/* SSL_CTX_set_min_proto_version(conn->ssl_ctx, TLS1_1_VERSION); Not yet implemented */
+		SSL_CTX_set_options(conn->ssl_ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1);
+		
 		conn->ssl      = SSL_new (conn->ssl_ctx);       
 		if (conn->ssl_ctx == NULL || conn->ssl == NULL) {
 			nopoll_log (ctx, NOPOLL_LEVEL_CRITICAL, "Unable to create SSL context");
@@ -3416,7 +3419,8 @@ nopoll_bool nopoll_conn_accept_complete (noPollCtx * ctx, noPollConn * listener,
 		__nopoll_tls_was_init = nopoll_true;
 
 		/* accept TLS connection */
-		conn->ssl_ctx  = SSL_CTX_new (TLSv1_server_method ());
+		conn->ssl_ctx  = SSL_CTX_new (SSLv23_server_method ());
+		SSL_CTX_set_options(conn->ssl_ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1);
 
 		nopoll_log (ctx, NOPOLL_LEVEL_DEBUG, "Using certificate file: %s", certificateFile);
 		if (SSL_CTX_use_certificate_file (conn->ssl_ctx, certificateFile, SSL_FILETYPE_PEM) <= 0) {
