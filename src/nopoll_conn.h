@@ -146,7 +146,9 @@ int           nopoll_conn_read (noPollConn * conn, char * buffer, int bytes, nop
 
 nopoll_bool      nopoll_conn_send_ping (noPollConn * conn);
 
-nopoll_bool      nopoll_conn_send_pong (noPollConn * conn);
+nopoll_bool      nopoll_conn_send_pong (noPollConn * conn,
+					long         length,
+					noPollPtr    content);
 
 void          nopoll_conn_set_on_msg (noPollConn              * conn,
 				      noPollOnMessageHandler    on_msg,

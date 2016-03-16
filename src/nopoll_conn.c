@@ -2370,16 +2370,6 @@ noPollMsg   * nopoll_conn_get_msg (noPollConn * conn)
 		return NULL;
 	} /* end if */
 
-	if (msg->op_code == NOPOLL_PING_FRAME) {
-		nopoll_log (conn->ctx, NOPOLL_LEVEL_DEBUG, "PING received over connection id=%d, replying PONG", conn->id);
-		nopoll_msg_unref (msg);
-
-		/* call to send pong */
-		nopoll_conn_send_pong (conn);
-
-		return NULL;
-	} /* end if */
-
 	/* get more bytes */
 	if (msg->is_masked) {
 		bytes = __nopoll_conn_receive (conn, (char *) msg->mask, 4);
@@ -2800,6 +2790,22 @@ int           nopoll_conn_read (noPollConn * conn, char * buffer, int bytes, nop
 
 		/* get the message content into the buffer */
 		if (msg) {
+			/*
+			   flexVDI - This check was originally on get_msg. I've moved it here
+			   because:
+			     1) We need the payload to send a proper WS PONG.
+			     2) We must return a well known value (-3) to spice-gtk.
+			*/
+			if (msg->op_code == NOPOLL_PING_FRAME) {
+				nopoll_log (conn->ctx, NOPOLL_LEVEL_DEBUG, "Detected a PING, sending PONG");
+				nopoll_conn_send_pong(conn,
+						      nopoll_msg_get_payload_size (msg),
+						      nopoll_msg_get_payload (msg));
+				nopoll_msg_unref (msg);
+				/* spice-gtk interprets -3 as no message, but no error either */
+				return -3;
+			}
+
 			/* get the amount of bytes we can read */
 			amount = nopoll_msg_get_payload_size (msg);
 			total_pending = bytes - total_read;
@@ -2935,9 +2941,12 @@ void          nopoll_conn_set_on_close (noPollConn            * conn,
  * @param nopoll_true if the operation was sent without any error,
  * otherwise nopoll_false is returned.
  */
-nopoll_bool      nopoll_conn_send_pong (noPollConn * conn)
+nopoll_bool      nopoll_conn_send_pong (noPollConn * conn,
+					long         length,
+					noPollPtr    content)
 {
-	return nopoll_conn_send_frame (conn, nopoll_true, nopoll_false, NOPOLL_PONG_FRAME, 0, NULL, 0);
+	return nopoll_conn_send_frame (conn, nopoll_true, nopoll_true,
+				       NOPOLL_PONG_FRAME, length, content, 0);
 }
 
 /** 
