@@ -469,7 +469,7 @@ noPollConn * __nopoll_conn_new_common (noPollCtx    * ctx,
 	int              size;
 	int              ssl_error;
 	X509           * server_cert;
-	int              iterator;
+	/*int              iterator;*/
 	long             remaining_timeout;
 
 	nopoll_return_val_if_fail (ctx, ctx && host_ip, NULL);
@@ -576,7 +576,7 @@ noPollConn * __nopoll_conn_new_common (noPollCtx    * ctx,
 
 		/* do the initial connect connect */
 		nopoll_log (ctx, NOPOLL_LEVEL_DEBUG, "connecting to remote TLS site");
-		iterator = 0;
+		/*iterator = 0;*/
 		while (SSL_connect (conn->ssl) <= 0) {
 		
 			/* get ssl error */
